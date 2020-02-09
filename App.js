@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { UIManager, LayoutAnimation } from 'react-native'
 import Tts from 'react-native-tts';
 import { Vocabulary } from './Screens'
 import { PRONOUNS, VOCABULARY } from './constants'
@@ -6,11 +7,14 @@ import { getRandomInt } from './helpers'
 
 const App: () => React$Node = () => {
 
+    const [history, setHistory] = useState([]);
     const [currentPhrase, setCurrentPhrase] = useState(false);
     const [ttsStatus, setTtsStatus] = useState(false);
     const timer = useRef();
+    const counter = useRef(0);
 
     useEffect(() => {
+        enableLayoutAnimation();
         getRandomWord();
         setupTTS();
     }, []);
@@ -18,6 +22,19 @@ const App: () => React$Node = () => {
     useEffect(() => {
         readText();
     }, [currentPhrase])
+
+    useEffect(() => {
+        updateLayoutAnimation();
+    }, [history]);
+
+    const enableLayoutAnimation = () => {
+        UIManager.setLayoutAnimationEnabledExperimental &&
+        UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+
+    const updateLayoutAnimation = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+    }
 
     const setupTTS = () => {
         Tts.addEventListener('tts-start', event => setTtsStatus('started'));
@@ -54,11 +71,13 @@ const App: () => React$Node = () => {
         Tts.stop();
         await setTtsEnglish();
         Tts.speak(currentPhrase.english);
+        setHistory([ ...history, { id: currentPhrase.id, english: currentPhrase.english } ])
 
         await clearTimer();
         timer.current = setTimeout(() => {
             setTtsSpanish();
             Tts.speak(currentPhrase.spanish);
+            setHistory([ ...history, { id: currentPhrase.id, english: currentPhrase.english, spanish: currentPhrase.spanish } ])
         }, 2000)
     };
 
@@ -68,14 +87,18 @@ const App: () => React$Node = () => {
 
         setCurrentPhrase(
             {
+                id: counter.current++,
                 english: `${PRONOUNS.english[pronounIndex]} ${wordObj.english[pronounIndex]}`,
                 spanish: `${PRONOUNS.spanish[pronounIndex]} ${wordObj.spanish[pronounIndex]}`
             }
         )
     }
 
+    console.log(history);
+
     return (
         <Vocabulary
+            history={history}
             currentPhrase={currentPhrase}
             getRandomWord={getRandomWord}
         />
