@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Tts from 'react-native-tts';
 import { Vocabulary } from './Screens'
 import { PRONOUNS, VOCABULARY } from './constants'
@@ -8,6 +8,7 @@ const App: () => React$Node = () => {
 
     const [currentPhrase, setCurrentPhrase] = useState(false);
     const [ttsStatus, setTtsStatus] = useState(false);
+    const timer = useRef();
 
     useEffect(() => {
         getRandomWord();
@@ -19,9 +20,9 @@ const App: () => React$Node = () => {
     }, [currentPhrase])
 
     const setupTTS = () => {
-        Tts.addEventListener('tts-start', event => setTtsStatus('started') );
-        Tts.addEventListener('tts-finish', event => setTtsStatus('finished') );
-        Tts.addEventListener('tts-cancel', event => setTtsStatus('cancelled') );
+        Tts.addEventListener('tts-start', event => setTtsStatus('started'));
+        Tts.addEventListener('tts-finish', event => setTtsStatus('finished'));
+        Tts.addEventListener('tts-cancel', event => setTtsStatus('cancelled'));
         Tts.setDefaultRate(0.5);
         Tts.setDefaultPitch(1);
         Tts.getInitStatus().then(initTts);
@@ -34,26 +35,31 @@ const App: () => React$Node = () => {
 
     const setTtsSpanish = async () => {
         Tts.setDefaultRate(0.4);
-        await Tts.setDefaultVoice("com.apple.ttsbundle.Monica-compact");
+        await Tts.setDefaultVoice('com.apple.ttsbundle.Monica-compact');
     }
 
     const setTtsEnglish = async () => {
         Tts.setDefaultRate(0.5);
-        await Tts.setDefaultVoice("com.apple.ttsbundle.Daniel-compact");
+        await Tts.setDefaultVoice('com.apple.ttsbundle.Daniel-compact');
+    }
+
+    const clearTimer = async () => {
+        clearTimeout(timer.current);
+        timer.current = null;
     }
 
     const readText = async () => {
         if (!currentPhrase) return;
-        console.log('here', currentPhrase);
 
         Tts.stop();
         await setTtsEnglish();
         Tts.speak(currentPhrase.english);
 
-        setTimeout(() => {
+        await clearTimer();
+        timer.current = setTimeout(() => {
             setTtsSpanish();
             Tts.speak(currentPhrase.spanish);
-        }, 3000)
+        }, 2000)
     };
 
     const getRandomWord = () => {
